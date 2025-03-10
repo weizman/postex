@@ -167,11 +167,31 @@ function renderPosts() {
     });
 }
 
+// Copy post content to clipboard
+function copyPostContent(postId) {
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+        navigator.clipboard.writeText(post.content)
+            .then(() => {
+                // Visual feedback could be added here
+                console.log('Content copied to clipboard');
+            })
+            .catch(err => {
+                console.error('Failed to copy content: ', err);
+            });
+    }
+}
+
 // Create a post element
 function createPostElement(post, index) {
     const div = document.createElement('div');
     div.className = 'post';
     div.innerHTML = `
+        <button class="copy-icon-btn" data-post-id="${post.id}" title="Copy post">
+            <svg viewBox="0 0 24 24">
+                <path d="M16 1H4C2.9 1 2 1.9 2 3v14h2V3h12V1zm3 4H8C6.9 5 6 5.9 6 7v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+            </svg>
+        </button>
         <div 
             class="post-content" 
             contenteditable="true"
@@ -214,6 +234,9 @@ function createPostElement(post, index) {
         handlePostInput(e);
         updateTextHighlighting(e.target);
     });
+
+    const copyBtn = div.querySelector('.copy-icon-btn');
+    copyBtn.addEventListener('click', () => copyPostContent(post.id));
 
     const imageInput = div.querySelector('.image-input');
     const imageUploadBtn = div.querySelector('.image-upload-btn');

@@ -295,4 +295,34 @@ h1 {
 .subtitle {
     color: #8899A6;
     font-size: 1rem;
+}
+
+.copy-icon-btn {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    min-width: 32px;
+    min-height: 32px;
+    z-index: 1;
+}
+
+.copy-icon-btn:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.copy-icon-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--text-color);
 } 

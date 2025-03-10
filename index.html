@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Thread Composer</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="drafts-sidebar">
+            <div class="drafts-header">
+                <h2>Drafts</h2>
+                <button id="newDraft" class="btn primary">New Draft</button>
+            </div>
+            <div class="drafts-list">
+                <!-- Drafts will be added here dynamically -->
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <header>
+                    <h1>X Thread Composer</h1>
+                    <p class="subtitle">Compose your thread offline, save automatically</p>
+                </header>
+
+                <div class="thread-container">
+                    <div class="thread-posts">
+                        <!-- Thread posts will be added here dynamically -->
+                    </div>
+                    
+                    <div class="controls">
+                        <button id="addPost" class="btn primary">Add Tweet</button>
+                        <button id="clearThread" class="btn secondary">Clear Thread</button>
+                    </div>
+                </div>
+
+                <footer>
+                    <p>Your thread is automatically saved as you type</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+</html> 

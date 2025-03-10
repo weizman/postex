@@ -1,0 +1,12 @@
+{
+  "name": "x-thread-composer",
+  "version": "1.0.0",
+  "description": "A client-side Twitter thread composer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["twitter", "thread", "composer", "client-side"],
+  "author": "",
+  "license": "ISC"
+} 

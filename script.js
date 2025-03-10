@@ -76,8 +76,10 @@ function switchToDraft(draftId) {
 function updateDraftTitle() {
     const draft = drafts.find(d => d.id === currentDraftId);
     if (draft && posts.length > 0) {
-        const firstPostContent = posts[0].content;
-        draft.title = firstPostContent.slice(0, 50) + (firstPostContent.length > 50 ? '...' : '');
+        const firstPostContent = posts[0].content.trim();
+        const words = firstPostContent.split(/\s+/);
+        const firstThreeWords = words.slice(0, 3).join(' ');
+        draft.title = (firstThreeWords || 'Untitled Draft') + ' ...';
         draft.lastModified = new Date().toISOString();
         saveDrafts();
         renderDraftsList();
@@ -236,7 +238,7 @@ function updateTextHighlighting(element) {
     countElement.textContent = `${count}/${MAX_CHARS}`;
     countElement.classList.toggle('over', count > MAX_CHARS);
     
-    // Store cursor position if there is an active selection
+    // Store cursor position and selection
     let cursorOffset = 0;
     let isInOverLimit = false;
     try {
@@ -244,18 +246,17 @@ function updateTextHighlighting(element) {
         if (selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
             if (range.commonAncestorContainer === element || element.contains(range.commonAncestorContainer)) {
-                // Check if cursor is in the over-limit span
-                const overLimitSpan = element.querySelector('.over-limit');
-                if (overLimitSpan && (overLimitSpan === range.commonAncestorContainer || overLimitSpan.contains(range.commonAncestorContainer))) {
-                    isInOverLimit = true;
-                    cursorOffset = range.startOffset + MAX_CHARS;
-                } else {
-                    cursorOffset = range.startOffset;
-                }
+                // Get the text content up to the cursor
+                const preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents(element);
+                preCaretRange.setEnd(range.endContainer, range.endOffset);
+                cursorOffset = preCaretRange.toString().length;
+                
+                // Check if cursor is in the over-limit section
+                isInOverLimit = cursorOffset > MAX_CHARS;
             }
         }
     } catch (e) {
-        // If there's any error getting the selection, just continue without cursor position
         console.log('No active selection');
     }
     
@@ -270,14 +271,15 @@ function updateTextHighlighting(element) {
             try {
                 const selection = window.getSelection();
                 const newRange = document.createRange();
+                const textNodes = element.childNodes;
                 
                 if (isInOverLimit) {
-                    // If we were in the over-limit section, place cursor in the over-limit span
+                    // Cursor should be in the over-limit span
                     const overLimitSpan = element.querySelector('.over-limit');
                     const adjustedOffset = cursorOffset - MAX_CHARS;
                     newRange.setStart(overLimitSpan.firstChild, adjustedOffset);
                 } else {
-                    // If we were in the normal section, place cursor in the text node
+                    // Cursor should be in the normal text
                     newRange.setStart(element.firstChild, cursorOffset);
                 }
                 
@@ -285,7 +287,6 @@ function updateTextHighlighting(element) {
                 selection.removeAllRanges();
                 selection.addRange(newRange);
             } catch (e) {
-                // If there's any error restoring the cursor position, just continue
                 console.log('Could not restore cursor position');
             }
         }
@@ -303,7 +304,6 @@ function updateTextHighlighting(element) {
                 selection.removeAllRanges();
                 selection.addRange(newRange);
             } catch (e) {
-                // If there's any error restoring the cursor position, just continue
                 console.log('Could not restore cursor position');
             }
         }

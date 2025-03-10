@@ -97,11 +97,19 @@ function renderDraftsList() {
                 <div class="draft-item-title">${draft.title}</div>
                 <div class="draft-item-date">${new Date(draft.lastModified).toLocaleString()}</div>
             </div>
+            <button class="post-thread-btn">Post Thread</button>
         `;
         
         // Add click handler for the draft content
         const draftContent = draftElement.querySelector('.draft-content');
         draftContent.addEventListener('click', () => switchToDraft(draft.id));
+        
+        // Add click handler for the post thread button
+        const postThreadBtn = draftElement.querySelector('.post-thread-btn');
+        postThreadBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent triggering the draft item click
+            postThread(draft.id);
+        });
         
         draftsList.appendChild(draftElement);
     });

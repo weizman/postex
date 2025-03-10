@@ -83,6 +83,10 @@ body {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .draft-item:hover {
@@ -92,6 +96,28 @@ body {
 .draft-item.active {
     border-color: var(--primary-color);
     background-color: rgba(29, 161, 242, 0.1);
+}
+
+.post-thread-btn {
+    display: none;
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.draft-item:hover .post-thread-btn {
+    display: block;
+}
+
+.post-thread-btn:hover {
+    background-color: var(--primary-color);
+    opacity: 0.9;
 }
 
 .draft-content {

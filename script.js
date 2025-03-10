@@ -187,11 +187,6 @@ function createPostElement(post, index) {
     const div = document.createElement('div');
     div.className = 'post';
     div.innerHTML = `
-        <button class="copy-icon-btn" data-post-id="${post.id}" title="Copy post">
-            <svg viewBox="0 0 24 24">
-                <path d="M16 1H4C2.9 1 2 1.9 2 3v14h2V3h12V1zm3 4H8C6.9 5 6 5.9 6 7v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-            </svg>
-        </button>
         <div 
             class="post-content" 
             contenteditable="true"
@@ -201,18 +196,26 @@ function createPostElement(post, index) {
         <div class="post-footer">
             <div class="character-count">${post.content.length}/${MAX_CHARS}</div>
             <div class="post-actions">
+                <button class="icon-btn copy-icon-btn" data-post-id="${post.id}" title="Copy post">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M16 1H4C2.9 1 2 1.9 2 3v14h2V3h12V1zm3 4H8C6.9 5 6 5.9 6 7v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                </button>
                 <input type="file" 
                     accept="image/*" 
                     class="image-input" 
                     data-post-id="${post.id}"
-                    style="display: none"
                 >
-                <button class="btn secondary image-upload-btn" data-post-id="${post.id}">
-                    Add Image
+                <button class="icon-btn image-upload-btn" data-post-id="${post.id}" title="Add image">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                    </svg>
                 </button>
                 ${index > 0 ? `
-                    <button class="btn secondary delete-post-btn" data-post-id="${post.id}">
-                        Delete
+                    <button class="icon-btn delete-post-btn" data-post-id="${post.id}" title="Delete post">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
                     </button>
                 ` : ''}
             </div>
@@ -369,11 +372,13 @@ function handleImageUpload(e) {
 
 // Delete a post
 function deletePost(postId) {
-    posts = posts.filter(p => p.id !== postId);
-    localStorage.removeItem(`${IMAGE_STORAGE_PREFIX}${postId}`);
-    updateDraftTitle();
-    saveDraft();
-    renderPosts();
+    if (confirm('Are you sure you want to delete this post?')) {
+        posts = posts.filter(p => p.id !== postId);
+        localStorage.removeItem(`${IMAGE_STORAGE_PREFIX}${postId}`);
+        updateDraftTitle();
+        saveDraft();
+        renderPosts();
+    }
 }
 
 // Save current draft

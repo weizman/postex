@@ -280,6 +280,41 @@ footer {
 .post-actions {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    min-width: 32px;
+    min-height: 32px;
+}
+
+.icon-btn:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.icon-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--text-color);
+}
+
+.icon-btn.delete-post-btn svg {
+    fill: var(--error-color);
+}
+
+.copy-icon-btn {
+    display: flex;
 }
 
 header {
@@ -297,32 +332,17 @@ h1 {
     font-size: 1rem;
 }
 
-.copy-icon-btn {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    background: none;
-    border: none;
-    padding: 0.5rem;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    min-width: 32px;
-    min-height: 32px;
-    z-index: 1;
+.image-input {
+    display: none;
 }
 
-.copy-icon-btn:hover {
-    opacity: 1;
-    background-color: rgba(255, 255, 255, 0.1);
+.image-preview {
+    margin-top: 1rem;
+    max-width: 100%;
+    border-radius: 8px;
 }
 
-.copy-icon-btn svg {
-    width: 18px;
-    height: 18px;
-    fill: var(--text-color);
+.image-preview img {
+    max-width: 100%;
+    border-radius: 8px;
 } 

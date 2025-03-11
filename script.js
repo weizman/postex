@@ -336,6 +336,11 @@ function createPostElement(post, index) {
         ${post.image ? `
             <div class="image-preview">
                 <img src="${post.image}" alt="Preview">
+                <button class="icon-btn remove-image-btn" data-post-id="${post.id}" title="Remove image">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
             </div>
         ` : ''}
     `;
@@ -395,7 +400,14 @@ function createPostElement(post, index) {
           reader.readAsDataURL(file);
         }
     }
+
     contentDiv.addEventListener('drop', dropHandler);
+
+    // Add remove image button handler if image exists
+    if (post.image) {
+        const removeImageBtn = div.querySelector('.remove-image-btn');
+        removeImageBtn.addEventListener('click', () => removeImage(post.id));
+    }
 
     const deleteBtn = div.querySelector('.delete-post-btn');
     if (deleteBtn) {
@@ -606,6 +618,18 @@ function saveDraft() {
         draft.posts = posts;
         draft.lastModified = new Date().toISOString();
         saveDrafts();
+    }
+}
+
+// Add the removeImage function
+function removeImage(postId) {
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+        post.image = null;
+        localStorage.removeItem(`${IMAGE_STORAGE_PREFIX}${postId}`);
+        updateDraftTitle();
+        saveDraft();
+        renderPosts();
     }
 }
 

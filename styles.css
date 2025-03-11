@@ -235,11 +235,37 @@ body {
     margin-top: 1rem;
     max-width: 100%;
     border-radius: 8px;
+    position: relative;
 }
 
 .image-preview img {
     max-width: 100%;
     border-radius: 8px;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    padding: 6px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.remove-image-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: white;
+}
+
+.image-preview:hover .remove-image-btn {
+    opacity: 1;
+}
+
+.remove-image-btn:hover {
+    background-color: rgba(0, 0, 0, 0.8);
 }
 
 footer {
@@ -420,17 +446,6 @@ h1 {
 
 .image-input {
     display: none;
-}
-
-.image-preview {
-    margin-top: 1rem;
-    max-width: 100%;
-    border-radius: 8px;
-}
-
-.image-preview img {
-    max-width: 100%;
-    border-radius: 8px;
 }
 
 .draft-actions {

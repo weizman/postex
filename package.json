@@ -1,5 +1,5 @@
 {
-  "name": "PosteX",
+  "name": "Postex",
   "version": "1.0.0",
   "description": "A client-side only X thread composer",
   "main": "server.js",

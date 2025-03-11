@@ -305,6 +305,12 @@ footer {
     word-wrap: break-word;
 }
 
+.post-content .url {
+    color: var(--primary-color);
+    text-decoration: none;
+    cursor: text;
+}
+
 .post-content:empty:before {
     content: attr(placeholder);
     color: #8899A6;

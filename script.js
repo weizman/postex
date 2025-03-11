@@ -283,7 +283,7 @@ function updateTextHighlighting(element) {
     countElement.textContent = `${count}/${MAX_CHARS}`;
     countElement.classList.toggle('over', count > MAX_CHARS);
     
-    // Store cursor position and selection
+    // Store cursor position
     let cursorOffset = 0;
     let isInOverLimit = false;
     try {
@@ -291,13 +291,10 @@ function updateTextHighlighting(element) {
         if (selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
             if (range.commonAncestorContainer === element || element.contains(range.commonAncestorContainer)) {
-                // Get the text content up to the cursor
                 const preCaretRange = range.cloneRange();
                 preCaretRange.selectNodeContents(element);
                 preCaretRange.setEnd(range.endContainer, range.endOffset);
                 cursorOffset = preCaretRange.toString().length;
-                
-                // Check if cursor is in the over-limit section
                 isInOverLimit = cursorOffset > MAX_CHARS;
             }
         }
@@ -305,52 +302,72 @@ function updateTextHighlighting(element) {
         console.log('No active selection');
     }
     
-    // Update text highlighting
+    // Format the content with URL highlighting and character limit
+    let formattedContent = content;
+    
+    // URL detection regex
+    const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
+    
+    // First, escape any HTML in the content
+    formattedContent = formattedContent.replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    
+    // Then highlight URLs
+    formattedContent = formattedContent.replace(urlRegex, '<span class="url">$1</span>');
+    
+    // Finally, apply character limit highlighting if needed
     if (count > MAX_CHARS) {
-        const normalText = content.slice(0, MAX_CHARS);
-        const overLimitText = content.slice(MAX_CHARS);
+        const normalText = formattedContent.slice(0, MAX_CHARS);
+        const overLimitText = formattedContent.slice(MAX_CHARS);
         element.innerHTML = `${normalText}<span class="over-limit">${overLimitText}</span>`;
-        
-        // Restore cursor position if we had one
-        if (cursorOffset > 0) {
-            try {
-                const selection = window.getSelection();
-                const newRange = document.createRange();
-                const textNodes = element.childNodes;
+    } else {
+        element.innerHTML = formattedContent;
+    }
+    
+    // Restore cursor position
+    if (cursorOffset > 0) {
+        try {
+            const selection = window.getSelection();
+            const newRange = document.createRange();
+            
+            // Function to find the correct text node and offset
+            function findPositionInFormattedContent(targetOffset) {
+                let currentOffset = 0;
+                const walker = document.createTreeWalker(
+                    element,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
                 
-                if (isInOverLimit) {
-                    // Cursor should be in the over-limit span
-                    const overLimitSpan = element.querySelector('.over-limit');
-                    const adjustedOffset = cursorOffset - MAX_CHARS;
-                    newRange.setStart(overLimitSpan.firstChild, adjustedOffset);
-                } else {
-                    // Cursor should be in the normal text
-                    newRange.setStart(element.firstChild, cursorOffset);
+                let node;
+                while ((node = walker.nextNode())) {
+                    const nodeLength = node.length;
+                    if (currentOffset + nodeLength >= targetOffset) {
+                        return {
+                            node: node,
+                            offset: targetOffset - currentOffset
+                        };
+                    }
+                    currentOffset += nodeLength;
                 }
                 
-                newRange.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(newRange);
-            } catch (e) {
-                console.log('Could not restore cursor position');
+                // If we couldn't find the exact position, return the last possible position
+                const lastNode = element.lastChild;
+                return {
+                    node: lastNode.nodeType === 3 ? lastNode : element,
+                    offset: lastNode.nodeType === 3 ? lastNode.length : 0
+                };
             }
-        }
-    } else {
-        // If under limit, just show the text without any highlighting
-        element.textContent = content;
-        
-        // Restore cursor position if we had one
-        if (cursorOffset > 0) {
-            try {
-                const selection = window.getSelection();
-                const newRange = document.createRange();
-                newRange.setStart(element.firstChild, cursorOffset);
-                newRange.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(newRange);
-            } catch (e) {
-                console.log('Could not restore cursor position');
-            }
+            
+            const position = findPositionInFormattedContent(cursorOffset);
+            newRange.setStart(position.node, position.offset);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+        } catch (e) {
+            console.log('Could not restore cursor position');
         }
     }
 }

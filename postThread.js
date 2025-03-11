@@ -15,7 +15,9 @@ function base64ToBlob(base64) {
 }
 
 function copyTextToClipboard(text) {
-    const clipboardItem = new ClipboardItem({'text/plain': text});
+    // Create a Blob with the text content and proper encoding
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const clipboardItem = new ClipboardItem({ 'text/plain': blob });
     return navigator.clipboard.write([clipboardItem]);
 }
 

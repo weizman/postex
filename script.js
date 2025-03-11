@@ -3,6 +3,85 @@ const MAX_CHARS = 280;
 const DRAFTS_STORAGE_KEY = 'x_thread_drafts';
 const IMAGE_STORAGE_PREFIX = 'x_thread_image_';
 
+// IndexedDB setup
+let db;
+const DB_NAME = 'x_thread_db';
+const DB_VERSION = 1;
+const DRAFTS_STORE = 'drafts';
+const IMAGES_STORE = 'images';
+
+// Initialize IndexedDB
+const initDB = () => {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            db = request.result;
+            resolve(db);
+        };
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            
+            // Create drafts store
+            if (!db.objectStoreNames.contains(DRAFTS_STORE)) {
+                db.createObjectStore(DRAFTS_STORE, { keyPath: 'id' });
+            }
+            
+            // Create images store
+            if (!db.objectStoreNames.contains(IMAGES_STORE)) {
+                db.createObjectStore(IMAGES_STORE, { keyPath: 'id' });
+            }
+        };
+    });
+};
+
+// IndexedDB helper functions
+const dbGetAll = (storeName) => {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.getAll();
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+    });
+};
+
+const dbGet = (storeName, key) => {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.get(key);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+    });
+};
+
+const dbPut = (storeName, value) => {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.put(value);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+    });
+};
+
+const dbDelete = (storeName, key) => {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.delete(key);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+    });
+};
+
 // DOM Elements
 const threadPosts = document.querySelector('.thread-posts');
 const addPostBtn = document.getElementById('addPost');
@@ -71,28 +150,40 @@ document.addEventListener('click', (e) => {
 });
 
 // Initialize the app
-function init() {
-    loadDrafts();
-    setupEventListeners();
-    if (drafts.length === 0) {
-        createNewDraft();
-    } else {
-        switchToDraft(drafts[0].id);
+async function init() {
+    try {
+        await initDB();
+        await loadDrafts();
+        setupEventListeners();
+        if (drafts.length === 0) {
+            await createNewDraft();
+        } else {
+            await switchToDraft(drafts[0].id);
+        }
+    } catch (error) {
+        console.error('Failed to initialize app:', error);
     }
 }
 
-// Load drafts from localStorage
-function loadDrafts() {
-    const savedDrafts = localStorage.getItem(DRAFTS_STORAGE_KEY);
-    if (savedDrafts) {
-        drafts = JSON.parse(savedDrafts);
+// Load drafts from IndexedDB
+async function loadDrafts() {
+    try {
+        drafts = await dbGetAll(DRAFTS_STORE);
         renderDraftsList();
+    } catch (error) {
+        console.error('Failed to load drafts:', error);
+        drafts = [];
     }
 }
 
-// Save drafts to localStorage
-function saveDrafts() {
-    localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+// Save drafts to IndexedDB
+async function saveDrafts() {
+    try {
+        const promises = drafts.map(draft => dbPut(DRAFTS_STORE, draft));
+        await Promise.all(promises);
+    } catch (error) {
+        console.error('Failed to save drafts:', error);
+    }
 }
 
 // Setup event listeners
@@ -102,7 +193,7 @@ function setupEventListeners() {
 }
 
 // Create a new draft
-function createNewDraft() {
+async function createNewDraft() {
     const draft = {
         id: Date.now(),
         title: 'Untitled Draft',
@@ -115,17 +206,30 @@ function createNewDraft() {
         lastModified: new Date().toISOString()
     };
     drafts.push(draft);
-    saveDrafts();
+    await saveDrafts();
     renderDraftsList();
-    switchToDraft(draft.id);
+    await switchToDraft(draft.id);
 }
 
 // Switch to a specific draft
-function switchToDraft(draftId) {
+async function switchToDraft(draftId) {
     currentDraftId = draftId;
     const draft = drafts.find(d => d.id === draftId);
     if (draft) {
         posts = draft.posts;
+        // Load images for all posts
+        for (const post of posts) {
+            if (post.image) {
+                try {
+                    const imageData = await dbGet(IMAGES_STORE, post.id);
+                    if (imageData) {
+                        post.image = imageData.data;
+                    }
+                } catch (error) {
+                    console.error('Failed to load image for post:', post.id, error);
+                }
+            }
+        }
         renderPosts();
         updateDraftTitle();
         renderDraftsList();
@@ -133,7 +237,7 @@ function switchToDraft(draftId) {
 }
 
 // Update draft title based on first post content
-function updateDraftTitle() {
+async function updateDraftTitle() {
     const draft = drafts.find(d => d.id === currentDraftId);
     if (draft && posts.length > 0) {
         const firstPostContent = posts[0].content.trim();
@@ -141,7 +245,7 @@ function updateDraftTitle() {
         const firstThreeWords = words.slice(0, 3).join(' ');
         draft.title = (firstThreeWords || 'Untitled Draft') + ' ...';
         draft.lastModified = new Date().toISOString();
-        saveDrafts();
+        await saveDrafts();
         renderDraftsList();
     }
 }
@@ -194,23 +298,39 @@ function renderDraftsList() {
 }
 
 // Delete a draft
-function deleteDraft(draftId) {
+async function deleteDraft(draftId) {
     if (confirm('Are you sure you want to delete this draft?')) {
         const draftIndex = drafts.findIndex(d => d.id === draftId);
         if (draftIndex !== -1) {
-            // Remove the draft
-            drafts.splice(draftIndex, 1);
+            const draft = drafts[draftIndex];
             
-            // If we deleted the last draft, create a new one
-            if (drafts.length === 0) {
-                createNewDraft();
-            } else {
-                // Switch to the first available draft
-                switchToDraft(drafts[0].id);
+            // Delete all images associated with the draft's posts
+            const deleteImagePromises = draft.posts
+                .filter(post => post.image)
+                .map(post => dbDelete(IMAGES_STORE, post.id));
+            
+            try {
+                // Delete images and draft
+                await Promise.all([
+                    ...deleteImagePromises,
+                    dbDelete(DRAFTS_STORE, draftId)
+                ]);
+                
+                // Remove from local array
+                drafts.splice(draftIndex, 1);
+                
+                // If we deleted the last draft, create a new one
+                if (drafts.length === 0) {
+                    await createNewDraft();
+                } else {
+                    // Switch to the first available draft
+                    await switchToDraft(drafts[0].id);
+                }
+                
+                renderDraftsList();
+            } catch (error) {
+                console.error('Failed to delete draft:', error);
             }
-            
-            saveDrafts();
-            renderDraftsList();
         }
     }
 }
@@ -569,23 +689,31 @@ function updateTextHighlighting(element) {
 }
 
 // Handle post content input
-function handlePostInput(e) {
+async function handlePostInput(e) {
     const postId = parseInt(e.target.dataset.postId);
     const post = posts.find(p => p.id === postId);
     if (post) {
         const content = e.target.textContent;
         post.content = content;
-        updateDraftTitle();
-        saveDraft();
+        await updateDraftTitle();
+        await saveDraft();
     }
 }
 
-function saveImage(event, post) {
-    post.image = event.target.result;
-    localStorage.setItem(`${IMAGE_STORAGE_PREFIX}${post.id}`, event.target.result);
-    updateDraftTitle();
-    saveDraft();
-    renderPosts();
+async function saveImage(event, post) {
+    try {
+        post.image = event.target.result;
+        await dbPut(IMAGES_STORE, {
+            id: post.id,
+            data: event.target.result
+        });
+        await updateDraftTitle();
+        await saveDraft();
+        renderPosts();
+    } catch (error) {
+        console.error('Failed to save image:', error);
+        alert('Failed to save image. Please try again.');
+    }
 }
 
 // Handle image upload
@@ -601,35 +729,47 @@ function handleImageUpload(e) {
 }
 
 // Delete a post
-function deletePost(postId) {
+async function deletePost(postId) {
     if (confirm('Are you sure you want to delete this post?')) {
+        const post = posts.find(p => p.id === postId);
+        if (post && post.image) {
+            try {
+                await dbDelete(IMAGES_STORE, postId);
+            } catch (error) {
+                console.error('Failed to delete image:', error);
+            }
+        }
         posts = posts.filter(p => p.id !== postId);
-        localStorage.removeItem(`${IMAGE_STORAGE_PREFIX}${postId}`);
-        updateDraftTitle();
-        saveDraft();
+        await updateDraftTitle();
+        await saveDraft();
         renderPosts();
     }
 }
 
 // Save current draft
-function saveDraft() {
+async function saveDraft() {
     const draft = drafts.find(d => d.id === currentDraftId);
     if (draft) {
         draft.posts = posts;
         draft.lastModified = new Date().toISOString();
-        saveDrafts();
+        await saveDrafts();
     }
 }
 
-// Add the removeImage function
-function removeImage(postId) {
+// Remove image from post
+async function removeImage(postId) {
     const post = posts.find(p => p.id === postId);
     if (post) {
         post.image = null;
-        localStorage.removeItem(`${IMAGE_STORAGE_PREFIX}${postId}`);
-        updateDraftTitle();
-        saveDraft();
-        renderPosts();
+        try {
+            await dbDelete(IMAGES_STORE, postId);
+            await updateDraftTitle();
+            await saveDraft();
+            renderPosts();
+        } catch (error) {
+            console.error('Failed to remove image:', error);
+            alert('Failed to remove image. Please try again.');
+        }
     }
 }
 

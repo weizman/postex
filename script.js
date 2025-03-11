@@ -280,12 +280,23 @@ function openUrl(url) {
 // Update text highlighting
 function updateTextHighlighting(element) {
     const content = element.textContent;
-    const count = content.length;
+    
+    // URL detection regex
+    const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
+    
+    // Calculate adjusted character count
+    let adjustedCount = content.length;
+    const urls = content.match(urlRegex) || [];
+    
+    // Adjust the count by replacing each URL's actual length with 23
+    urls.forEach(url => {
+        adjustedCount = adjustedCount - url.length + 23;
+    });
     
     // Update character count
     const countElement = element.parentElement.querySelector('.character-count');
-    countElement.textContent = `${count}/${MAX_CHARS}`;
-    countElement.classList.toggle('over', count > MAX_CHARS);
+    countElement.textContent = `${adjustedCount}/${MAX_CHARS}`;
+    countElement.classList.toggle('over', adjustedCount > MAX_CHARS);
     
     // Store cursor position
     let cursorOffset = 0;
@@ -309,22 +320,59 @@ function updateTextHighlighting(element) {
     // Format the content with URL highlighting and character limit
     let formattedContent = content;
     
-    // URL detection regex
-    const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
-    
     // First, escape any HTML in the content
     formattedContent = formattedContent.replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
     
     // Then highlight URLs
-    formattedContent = formattedContent.replace(urlRegex, '<span onclick="openUrl(\'$1\')" class="url">$1</span>');
+    formattedContent = formattedContent.replace(urlRegex, '<span class="url">$1</span>');
     
     // Finally, apply character limit highlighting if needed
-    if (count > MAX_CHARS) {
-        const normalText = formattedContent.slice(0, MAX_CHARS);
-        const overLimitText = formattedContent.slice(MAX_CHARS);
-        element.innerHTML = `${normalText}<span class="over-limit">${overLimitText}</span>`;
+    if (adjustedCount > MAX_CHARS) {
+        // We need to find where the actual cut-off should be considering URL lengths
+        let visibleLength = 0;
+        let cutoffIndex = 0;
+        let currentIndex = 0;
+        
+        while (visibleLength < MAX_CHARS && currentIndex < content.length) {
+            let urlMatch = null;
+            urlRegex.lastIndex = currentIndex;  // Reset regex search position
+            const isUrlStart = content.slice(currentIndex).match(urlRegex);
+            
+            if (isUrlStart && isUrlStart.index === 0) {
+                // We're at the start of a URL
+                const url = isUrlStart[0];
+                visibleLength += 23;
+                currentIndex += url.length;
+                if (visibleLength <= MAX_CHARS) {
+                    cutoffIndex = currentIndex;
+                }
+            } else {
+                // Regular character
+                visibleLength += 1;
+                currentIndex += 1;
+                if (visibleLength <= MAX_CHARS) {
+                    cutoffIndex = currentIndex;
+                }
+            }
+        }
+        
+        const normalText = content.slice(0, cutoffIndex);
+        const overLimitText = content.slice(cutoffIndex);
+        
+        // Re-format both parts with URL highlighting
+        let formattedNormal = normalText.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(urlRegex, '<span class="url">$1</span>');
+            
+        let formattedOverLimit = overLimitText.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(urlRegex, '<span class="url">$1</span>');
+            
+        element.innerHTML = `${formattedNormal}<span class="over-limit">${formattedOverLimit}</span>`;
     } else {
         element.innerHTML = formattedContent;
     }

@@ -36,7 +36,7 @@ function generateSteps(draftId) {
     if (draft && draft.posts.length > 0) {
         steps.push({
             description: 'Open X with post #1',
-            action: start.bind(null, draft.posts[0].content)
+            action: start.bind(null, draft.posts[0].content.trim())
         });
         if (draft.posts[0].image) {
             steps.push({
@@ -50,7 +50,7 @@ function generateSteps(draftId) {
         if (post.content) {
             steps.push({
                 description: `Copy text for post #${i + 1}`,
-                action: copyTextToClipboard.bind(null, post.content)
+                action: copyTextToClipboard.bind(null, post.content.trim())
             });
         }
         if (post.image) {

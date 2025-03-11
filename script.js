@@ -49,6 +49,7 @@ function createNewDraft() {
     const draft = {
         id: Date.now(),
         title: 'Untitled Draft',
+        quoteUrl: '',
         posts: [{  // Add an initial empty post
             id: Date.now(),
             content: '',
@@ -171,6 +172,34 @@ function addNewPost() {
 
 // Render all posts
 function renderPosts() {
+    const draft = drafts.find(d => d.id === currentDraftId);
+    
+    // Create quote URL input if it doesn't exist
+    let quoteUrlInput = document.querySelector('.quote-url-input');
+    if (!quoteUrlInput) {
+        quoteUrlInput = document.createElement('div');
+        quoteUrlInput.className = 'quote-url-input';
+        quoteUrlInput.setAttribute('contenteditable', 'true');
+        quoteUrlInput.setAttribute('placeholder', 'Place URL of post to quote (optional)');
+        threadPosts.parentElement.insertBefore(quoteUrlInput, threadPosts);
+        
+        // Add input handler for quote URL
+        quoteUrlInput.addEventListener('input', () => {
+            const draft = drafts.find(d => d.id === currentDraftId);
+            if (draft) {
+                draft.quoteUrl = quoteUrlInput.textContent.trim();
+                saveDrafts();
+            }
+        });
+    }
+    
+    // Update quote URL input value
+    if (draft && draft.quoteUrl) {
+        quoteUrlInput.textContent = draft.quoteUrl;
+    } else {
+        quoteUrlInput.textContent = '';
+    }
+    
     threadPosts.innerHTML = '';
     posts.forEach((post, index) => {
         const postElement = createPostElement(post, index);

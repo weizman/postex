@@ -275,6 +275,28 @@ footer {
     margin-bottom: 2rem;
 }
 
+.quote-url-input {
+    width: 100%;
+    background-color: var(--secondary-background);
+    border-radius: 16px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    font-size: 1rem;
+    border: 1px solid var(--border-color);
+    outline: none;
+    min-height: 3rem;
+}
+
+.quote-url-input:empty:before {
+    content: attr(placeholder);
+    color: #8899A6;
+}
+
+.quote-url-input:focus {
+    border-color: var(--primary-color);
+}
+
 .thread-posts {
     display: flex;
     flex-direction: column;

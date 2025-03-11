@@ -120,6 +120,24 @@ function createStepperUI(steps) {
 }
 
 function postThread(draftId) {
+    const draft = drafts.find(d => d.id === draftId);
+    if (!draft) return;
+
+    // Check for posts exceeding character limit
+    const invalidPosts = draft.posts.map((post, index) => ({
+        index: index + 1,
+        length: post.content.length
+    })).filter(post => post.length > MAX_CHARS);
+
+    if (invalidPosts.length > 0) {
+        const message = invalidPosts.map(post => 
+            `Post #${post.index} has ${post.length} characters (${post.length - MAX_CHARS} over limit)`
+        ).join('\n');
+        
+        alert(`Cannot post thread. The following posts exceed ${MAX_CHARS} characters:\n\n${message}`);
+        return;
+    }
+
     const steps = generateSteps(draftId);
     if (steps.length === 0) return;
 

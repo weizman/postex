@@ -176,6 +176,14 @@ function renderPosts() {
         const postElement = createPostElement(post, index);
         threadPosts.appendChild(postElement);
     });
+
+    // Focus on the first post's content if it's empty
+    if (posts.length > 0 && !posts[0].content) {
+        const firstPost = threadPosts.querySelector('.post-content');
+        if (firstPost) {
+            firstPost.focus();
+        }
+    }
 }
 
 // Copy post content to clipboard

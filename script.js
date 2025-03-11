@@ -336,15 +336,23 @@ async function deleteDraft(draftId) {
 }
 
 // Add a new post to the current draft
-function addNewPost() {
+async function addNewPost() {
     const post = {
         id: Date.now(),
         content: '',
         image: null
     };
     posts.push(post);
-    updateDraftTitle();
+    await updateDraftTitle();
     renderPosts();
+    
+    // Find and focus the newly added post
+    const newPostElement = threadPosts.querySelector(`[data-post-id="${post.id}"]`);
+    if (newPostElement) {
+        newPostElement.focus();
+        // Scroll the new post into view with smooth behavior
+        newPostElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 
 // Render all posts
@@ -731,7 +739,9 @@ function handleImageUpload(e) {
 // Delete a post
 async function deletePost(postId) {
     if (confirm('Are you sure you want to delete this post?')) {
-        const post = posts.find(p => p.id === postId);
+        const postIndex = posts.findIndex(p => p.id === postId);
+        const post = posts[postIndex];
+        
         if (post && post.image) {
             try {
                 await dbDelete(IMAGES_STORE, postId);
@@ -739,10 +749,24 @@ async function deletePost(postId) {
                 console.error('Failed to delete image:', error);
             }
         }
+        
+        // Remove the post
         posts = posts.filter(p => p.id !== postId);
         await updateDraftTitle();
         await saveDraft();
         renderPosts();
+        
+        // Focus on the post above the deleted one (or the last post if we deleted the first one)
+        const targetIndex = Math.min(postIndex, posts.length - 1);
+        if (targetIndex >= 0) {
+            const targetPost = posts[targetIndex];
+            const targetElement = threadPosts.querySelector(`[data-post-id="${targetPost.id}"]`);
+            if (targetElement) {
+                targetElement.focus();
+                // Scroll the target post into view with smooth behavior
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
     }
 }
 

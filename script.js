@@ -14,26 +14,37 @@ let drafts = [];
 let currentDraftId = null;
 let currentEmoji = {
     target: null,
-    selection: null,
-    range: null,
-};  // Track which content div is receiving emoji
+    range: null
+};
 
 // Initialize emoji picker
 const pickerOptions = {
     onEmojiSelect: (emoji) => {
-        const { target, selection, range } = currentEmoji;
-        // Check if we have a valid target and it's currently focused
-        if (target.classList.contains('post-content')) {
-            // Insert the emoji at cursor position
+        const { target, range } = currentEmoji;
+        // Check if we have a valid target and it's a post content div
+        if (target && target.classList.contains('post-content')) {
+            // Insert the emoji at the stored range position
             const emojiText = emoji.native;
             const textNode = document.createTextNode(emojiText);
-            range.insertNode(textNode);
+            
+            // Focus back on the content div
+            target.focus();
+            
+            // Use the stored range
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            const newRange = range.cloneRange();
+            selection.addRange(newRange);
+            
+            // Insert the emoji
+            newRange.insertNode(textNode);
             
             // Move cursor after emoji
-            range.setStartAfter(textNode);
-            range.setEndAfter(textNode);
-            selection.removeAllRanges();
-            selection.addRange(range);
+            newRange.setStartAfter(textNode);
+            newRange.setEndAfter(textNode);
+            
+            // Store the new range for next emoji
+            currentEmoji.range = newRange.cloneRange();
             
             // Trigger input event to save content
             const event = new Event('input', { bubbles: true });
@@ -344,11 +355,18 @@ function createPostElement(post, index) {
     // Add emoji picker handler
     emojiBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        currentEmoji.target = contentDiv;
         
-        // Get the current cursor position
-        currentEmoji.selection = window.getSelection();
-        currentEmoji.range = currentEmoji.selection.getRangeAt(0);
+        // Focus the content div first
+        contentDiv.focus();
+        
+        // Store the current selection state
+        const selection = window.getSelection();
+        const range = selection.getRangeAt(0);
+        
+        currentEmoji = {
+            target: contentDiv,
+            range: range.cloneRange()
+        };
         
         // Position picker near the emoji button
         const rect = emojiBtn.getBoundingClientRect();
@@ -367,6 +385,17 @@ function createPostElement(post, index) {
     const imageUploadBtn = div.querySelector('.image-upload-btn');
     imageUploadBtn.addEventListener('click', () => imageInput.click());
     imageInput.addEventListener('change', handleImageUpload);
+
+    function dropHandler(ev) {
+        ev.preventDefault();
+        if (ev.dataTransfer.files?.[0]) {
+          const file = ev.dataTransfer.files[0];
+          const reader = new FileReader();
+          reader.onload = e => saveImage(e, post);
+          reader.readAsDataURL(file);
+        }
+    }
+    contentDiv.addEventListener('drop', dropHandler);
 
     const deleteBtn = div.querySelector('.delete-post-btn');
     if (deleteBtn) {
@@ -539,25 +568,23 @@ function handlePostInput(e) {
     }
 }
 
+function saveImage(event, post) {
+    post.image = event.target.result;
+    localStorage.setItem(`${IMAGE_STORAGE_PREFIX}${post.id}`, event.target.result);
+    updateDraftTitle();
+    saveDraft();
+    renderPosts();
+}
+
 // Handle image upload
 function handleImageUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
 
     const postId = parseInt(e.target.dataset.postId);
+    const post = posts.find(p => p.id === postId);
     const reader = new FileReader();
-
-    reader.onload = (event) => {
-        const post = posts.find(p => p.id === postId);
-        if (post) {
-            post.image = event.target.result;
-            localStorage.setItem(`${IMAGE_STORAGE_PREFIX}${postId}`, event.target.result);
-            updateDraftTitle();
-            saveDraft();
-            renderPosts();
-        }
-    };
-
+    reader.onload = e => saveImage(e, post);
     reader.readAsDataURL(file);
 }
 

@@ -38,10 +38,13 @@ function generateSteps(draftId) {
             description: 'Open X with post #1',
             action: start.bind(null, draft.posts[0].content.trim())
         });
-        if (draft.posts[0].image) {
-            steps.push({
-                description: 'Copy image for post #1',
-                action: copyImageToClipboard.bind(null, draft.posts[0].image)
+        // Handle images for first post
+        if (draft.posts[0].images && draft.posts[0].images.length > 0) {
+            draft.posts[0].images.forEach((image, index) => {
+                steps.push({
+                    description: `Copy image ${index + 1} for post #1`,
+                    action: copyImageToClipboard.bind(null, image)
+                });
             });
         }
     }
@@ -53,10 +56,13 @@ function generateSteps(draftId) {
                 action: copyTextToClipboard.bind(null, post.content.trim())
             });
         }
-        if (post.image) {
-            steps.push({
-                description: `Copy image for post #${i + 1}`,
-                action: copyImageToClipboard.bind(null, post.image)
+        // Handle images for subsequent posts
+        if (post.images && post.images.length > 0) {
+            post.images.forEach((image, index) => {
+                steps.push({
+                    description: `Copy image ${index + 1} for post #${i + 1}`,
+                    action: copyImageToClipboard.bind(null, image)
+                });
             });
         }     
     }

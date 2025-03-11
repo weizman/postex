@@ -744,6 +744,10 @@ h1 {
     color: var(--text-color);
     display: flex;
     flex-direction: column;
+    position: fixed;
+    top: 50%;
+    left: 10%;
+    transform: translateY(-50%);
 }
 
 .stepper-header {

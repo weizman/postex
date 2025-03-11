@@ -1,12 +1,12 @@
 {
-  "name": "x-thread-composer",
+  "name": "PosteX",
   "version": "1.0.0",
-  "description": "A client-side Twitter thread composer",
+  "description": "A client-side only X thread composer",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-  "keywords": ["twitter", "thread", "composer", "client-side"],
+  "keywords": ["twitter", "thread", "composer", "client-side", "x"],
   "author": "",
-  "license": "ISC"
+  "license": "MIT"
 } 

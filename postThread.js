@@ -28,7 +28,10 @@ function copyImageToClipboard(base64) {
 }
 
 function start(content) {
-    return window.open(`https://x.com/intent/post?text=${encodeURIComponent(content)}`);
+    return window.open(
+        `https://x.com/intent/post?text=${encodeURIComponent(content)}`,
+        "popupWindow", "top=200,left=1000,width=600,height=700"
+    );
 }
 
 // Post thread to X

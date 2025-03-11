@@ -12,6 +12,51 @@ const draftsList = document.querySelector('.drafts-list');
 // State
 let drafts = [];
 let currentDraftId = null;
+let currentEmojiTarget = null;  // Track which content div is receiving emoji
+
+// Initialize emoji picker
+const pickerOptions = {
+    onEmojiSelect: (emoji) => {
+        // Check if we have a valid target and it's currently focused
+        if (currentEmojiTarget.classList.contains('post-content')) {
+            // Get the current cursor position
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            
+            // Insert the emoji at cursor position
+            const emojiText = emoji.native;
+            const textNode = document.createTextNode(emojiText);
+            range.insertNode(textNode);
+            
+            // Move cursor after emoji
+            range.setStartAfter(textNode);
+            range.setEndAfter(textNode);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            // Trigger input event to save content
+            const event = new Event('input', { bubbles: true });
+            currentEmojiTarget.dispatchEvent(event);
+        }
+        
+        // Hide picker after selection
+        const picker = document.querySelector('.emoji-mart');
+        if (picker) picker.style.display = 'none';
+    }
+};
+
+const picker = new EmojiMart.Picker(pickerOptions);
+picker.style.display = 'none';
+picker.style.position = 'absolute';
+picker.style.zIndex = '1000';
+document.body.appendChild(picker);
+
+// Add click handler to document to hide picker when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.emoji-mart') && !e.target.closest('.emoji-btn')) {
+        picker.style.display = 'none';
+    }
+});
 
 // Initialize the app
 function init() {
@@ -244,6 +289,14 @@ function createPostElement(post, index) {
         <div class="post-footer">
             <div class="character-count">${post.content.length}/${MAX_CHARS}</div>
             <div class="post-actions">
+                <button class="icon-btn emoji-btn" title="Add emoji">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 22.75C6.072 22.75 1.25 17.928 1.25 12S6.072 1.25 12 1.25 22.75 6.072 22.75 12 17.928 22.75 12 22.75zm0-20C6.9 2.75 2.75 6.9 2.75 12S6.9 21.25 12 21.25s9.25-4.15 9.25-9.25S17.1 2.75 12 2.75z"/>
+                        <path d="M12 17.115c-2.25 0-4.309-.876-5.875-2.467a.748.748 0 01-.053-.938.751.751 0 011.063-.053c1.314 1.358 3.027 2.106 4.865 2.106s3.551-.748 4.865-2.106a.751.751 0 011.063.053.748.748 0 01-.053.938c-1.566 1.591-3.625 2.467-5.875 2.467z"/>
+                        <circle cx="8.5" cy="9.5" r="1.5"/>
+                        <circle cx="15.5" cy="9.5" r="1.5"/>
+                    </svg>
+                </button>
                 <button class="icon-btn copy-icon-btn" data-post-id="${post.id}" title="Copy post">
                     <svg viewBox="0 0 24 24">
                         <path d="M16 1H4C2.9 1 2 1.9 2 3v14h2V3h12V1zm3 4H8C6.9 5 6 5.9 6 7v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
@@ -277,6 +330,7 @@ function createPostElement(post, index) {
 
     // Add event listeners
     const contentDiv = div.querySelector('.post-content');
+    const emojiBtn = div.querySelector('.emoji-btn');
     
     // Initial render
     updateTextHighlighting(contentDiv);
@@ -284,6 +338,21 @@ function createPostElement(post, index) {
     contentDiv.addEventListener('input', (e) => {
         handlePostInput(e);
         updateTextHighlighting(e.target);
+    });
+
+    // Add emoji picker handler
+    emojiBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentEmojiTarget = contentDiv;
+        
+        // Position picker near the emoji button
+        const rect = emojiBtn.getBoundingClientRect();
+        picker.style.top = `${rect.bottom + window.scrollY + 5}px`;
+        picker.style.left = `${rect.left + window.scrollX}px`;
+        
+        // Toggle picker visibility
+        const isVisible = picker.style.display === 'block';
+        picker.style.display = isVisible ? 'none' : 'block';
     });
 
     const copyBtn = div.querySelector('.copy-icon-btn');

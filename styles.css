@@ -441,4 +441,19 @@ h1 {
 
 .draft-item:hover .draft-actions {
     display: flex;
+}
+
+.emoji-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: var(--primary-color);
+}
+
+.emoji-btn:hover svg {
+    fill: var(--primary-color-hover);
+}
+
+.emoji-mart {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
 } 

@@ -438,6 +438,13 @@ function createPostElement(post, index) {
         <div class="post-footer">
             <div class="character-count">${post.content.length}/${MAX_CHARS}</div>
             <div class="post-actions">
+                ${index > 0 ? `
+                <button class="icon-btn delete-post-btn" data-post-id="${post.id}" title="Delete post">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                </button>
+            ` : ''}
                 <button class="icon-btn emoji-btn" title="Add emoji">
                     <svg viewBox="0 0 24 24">
                         <path d="M12 22.75C6.072 22.75 1.25 17.928 1.25 12S6.072 1.25 12 1.25 22.75 6.072 22.75 12 17.928 22.75 12 22.75zm0-20C6.9 2.75 2.75 6.9 2.75 12S6.9 21.25 12 21.25s9.25-4.15 9.25-9.25S17.1 2.75 12 2.75z"/>
@@ -465,13 +472,6 @@ function createPostElement(post, index) {
                         <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                     </svg>
                 </button>
-                ${index > 0 ? `
-                    <button class="icon-btn delete-post-btn" data-post-id="${post.id}" title="Delete post">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                        </svg>
-                    </button>
-                ` : ''}
             </div>
         </div>
     `;

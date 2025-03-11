@@ -12,17 +12,18 @@ const draftsList = document.querySelector('.drafts-list');
 // State
 let drafts = [];
 let currentDraftId = null;
-let currentEmojiTarget = null;  // Track which content div is receiving emoji
+let currentEmoji = {
+    target: null,
+    selection: null,
+    range: null,
+};  // Track which content div is receiving emoji
 
 // Initialize emoji picker
 const pickerOptions = {
     onEmojiSelect: (emoji) => {
+        const { target, selection, range } = currentEmoji;
         // Check if we have a valid target and it's currently focused
-        if (currentEmojiTarget.classList.contains('post-content')) {
-            // Get the current cursor position
-            const selection = window.getSelection();
-            const range = selection.getRangeAt(0);
-            
+        if (target.classList.contains('post-content')) {
             // Insert the emoji at cursor position
             const emojiText = emoji.native;
             const textNode = document.createTextNode(emojiText);
@@ -36,7 +37,7 @@ const pickerOptions = {
             
             // Trigger input event to save content
             const event = new Event('input', { bubbles: true });
-            currentEmojiTarget.dispatchEvent(event);
+            target.dispatchEvent(event);
         }
         
         // Hide picker after selection
@@ -53,7 +54,7 @@ document.body.appendChild(picker);
 
 // Add click handler to document to hide picker when clicking outside
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('.emoji-mart') && !e.target.closest('.emoji-btn')) {
+    if (e.target !== picker && !picker.contains(e.target)) {
         picker.style.display = 'none';
     }
 });
@@ -343,7 +344,11 @@ function createPostElement(post, index) {
     // Add emoji picker handler
     emojiBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        currentEmojiTarget = contentDiv;
+        currentEmoji.target = contentDiv;
+        
+        // Get the current cursor position
+        currentEmoji.selection = window.getSelection();
+        currentEmoji.range = currentEmoji.selection.getRangeAt(0);
         
         // Position picker near the emoji button
         const rect = emojiBtn.getBoundingClientRect();

@@ -480,6 +480,46 @@ h1 {
     display: flex;
 }
 
+.lock-thread-btn {
+    min-width: 32px;
+    min-height: 32px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.lock-thread-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--text-color);
+}
+
+.lock-thread-btn.locked svg {
+    fill: var(--primary-color) !important;
+}
+
+.lock-thread-btn:hover {
+    opacity: 1;
+    background-color: rgba(29, 161, 242, 0.1);
+}
+
+.post-content[data-locked="true"] {
+    cursor: not-allowed;
+    user-select: none;
+}
+
+.post[data-locked="true"] .icon-btn:not(.delete-post-btn),
+.post[data-locked="true"] .image-upload-btn {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .emoji-btn svg {
     width: 20px;
     height: 20px;
@@ -748,4 +788,22 @@ h1 {
 .cancel-btn {
     margin-top: auto;
     flex-shrink: 0;
+}
+
+.icon-btn.delete-post-btn.disabled,
+.icon-btn.delete-thread-btn.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.icon-btn.delete-post-btn.disabled svg,
+.icon-btn.delete-thread-btn.disabled svg {
+    fill: var(--text-color);
+}
+
+.post[data-locked="true"] .delete-post-btn {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
 } 

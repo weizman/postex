@@ -198,10 +198,11 @@ async function createNewDraft() {
         id: Date.now(),
         title: 'Untitled Draft',
         quoteUrl: '',
-        posts: [{  // Add an initial empty post
+        isLocked: false,
+        posts: [{
             id: Date.now(),
             content: '',
-            images: []  // Changed from image: null to images array
+            images: []
         }],
         lastModified: new Date().toISOString()
     };
@@ -274,7 +275,14 @@ function renderDraftsList() {
                         <path d="M23.77 15.67c-.292-.293-.767-.293-1.06 0l-2.22 2.22V7.65c0-2.068-1.683-3.75-3.75-3.75h-5.85c-.414 0-.75.336-.75.75s.336.75.75.75h5.85c1.24 0 2.25 1.01 2.25 2.25v10.24l-2.22-2.22c-.293-.293-.768-.293-1.06 0s-.294.768 0 1.06l3.5 3.5c.145.147.337.22.53.22s.383-.072.53-.22l3.5-3.5c.294-.292.294-.767 0-1.06zm-10.66 3.28H7.26c-1.24 0-2.25-1.01-2.25-2.25V6.46l2.22 2.22c.148.147.34.22.532.22s.384-.073.53-.22c.293-.293.293-.768 0-1.06l-3.5-3.5c-.293-.294-.768-.294-1.06 0l-3.5 3.5c-.294.292-.294.767 0 1.06s.767.293 1.06 0l2.22-2.22V16.7c0 2.068 1.683 3.75 3.75 3.75h5.85c.414 0 .75-.336.75-.75s-.337-.75-.75-.75z"/>
                     </svg>
                 </button>
-                <button class="icon-btn delete-thread-btn" title="Delete Thread">
+                <button class="icon-btn lock-thread-btn ${draft.isLocked ? 'locked' : ''}" title="${draft.isLocked ? 'Unlock Thread' : 'Lock Thread'}">
+                    <svg viewBox="0 0 24 24">
+                        <path d="${draft.isLocked ? 
+                            'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z' : 
+                            'M12 1C8.7 1 6 3.7 6 7v3H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2h-2V7c0-3.3-2.7-6-6-6zm-2 6c0-1.1.9-2 2-2s2 .9 2 2v3h-4V7zm10 5v8H4v-8h16z'}"/>
+                    </svg>
+                </button>
+                <button class="icon-btn delete-thread-btn ${draft.isLocked ? 'disabled' : ''}" title="Delete Thread" ${draft.isLocked ? 'disabled' : ''}>
                     <svg viewBox="0 0 24 24">
                         <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                     </svg>
@@ -289,14 +297,26 @@ function renderDraftsList() {
         // Add click handler for the post thread button
         const postThreadBtn = draftElement.querySelector('.post-thread-btn');
         postThreadBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent triggering the draft item click
+            e.stopPropagation();
             postThread(draft.id);
+        });
+
+        // Add click handler for the lock thread button
+        const lockThreadBtn = draftElement.querySelector('.lock-thread-btn');
+        lockThreadBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            draft.isLocked = !draft.isLocked;
+            await saveDrafts();
+            renderDraftsList();
+            if (draft.id === currentDraftId) {
+                renderPosts(); // Refresh posts to update locked state
+            }
         });
 
         // Add click handler for the delete thread button
         const deleteThreadBtn = draftElement.querySelector('.delete-thread-btn');
         deleteThreadBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent triggering the draft item click
+            e.stopPropagation();
             deleteDraft(draft.id);
         });
         
@@ -306,6 +326,11 @@ function renderDraftsList() {
 
 // Delete a draft
 async function deleteDraft(draftId) {
+    const draft = drafts.find(d => d.id === draftId);
+    if (draft && draft.isLocked) {
+        return; // Exit early if the draft is locked
+    }
+    
     if (confirm('Are you sure you want to delete this draft?')) {
         const draftIndex = drafts.findIndex(d => d.id === draftId);
         if (draftIndex !== -1) {
@@ -365,38 +390,38 @@ async function addNewPost() {
 // Render all posts
 function renderPosts() {
     const draft = drafts.find(d => d.id === currentDraftId);
+    if (!draft) return;
     
-    // Create quote URL input if it doesn't exist
     let quoteUrlInput = document.querySelector('.quote-url-input');
     if (!quoteUrlInput) {
         quoteUrlInput = document.createElement('div');
         quoteUrlInput.className = 'quote-url-input';
-        quoteUrlInput.setAttribute('contenteditable', 'true');
+        quoteUrlInput.setAttribute('contenteditable', !draft.isLocked);
         quoteUrlInput.setAttribute('placeholder', 'Place URL of post to quote (optional)');
         threadPosts.parentElement.insertBefore(quoteUrlInput, threadPosts);
         
-        // Add input handler for quote URL
         quoteUrlInput.addEventListener('input', () => {
-            const draft = drafts.find(d => d.id === currentDraftId);
-            if (draft) {
-                draft.quoteUrl = quoteUrlInput.textContent.trim();
-                saveDrafts();
-            }
+            if (draft.isLocked) return;
+            draft.quoteUrl = quoteUrlInput.textContent.trim();
+            saveDrafts();
         });
     }
     
-    // Update quote URL input value
-    if (draft && draft.quoteUrl) {
-        quoteUrlInput.textContent = draft.quoteUrl;
-    } else {
-        quoteUrlInput.textContent = '';
-    }
+    quoteUrlInput.contentEditable = !draft.isLocked;
+    quoteUrlInput.textContent = draft.quoteUrl || '';
     
     threadPosts.innerHTML = '';
     posts.forEach((post, index) => {
-        const postElement = createPostElement(post, index);
+        const postElement = createPostElement(post, index, draft.isLocked);
         threadPosts.appendChild(postElement);
     });
+
+    // Disable add post button if thread is locked
+    if (addPostBtn) {
+        addPostBtn.disabled = draft.isLocked;
+        addPostBtn.style.opacity = draft.isLocked ? '0.3' : '1';
+        addPostBtn.style.cursor = draft.isLocked ? 'not-allowed' : 'pointer';
+    }
 
     // Focus on the first post's content if it's empty
     if (posts.length > 0 && !posts[0].content) {
@@ -423,29 +448,23 @@ function copyPostContent(postId) {
 }
 
 // Create a post element
-function createPostElement(post, index) {
+function createPostElement(post, index, isLocked) {
     const div = document.createElement('div');
     div.className = 'post';
+    div.dataset.locked = isLocked;
     
-    // Create the main post content
     const contentHtml = `
         <div 
             class="post-content" 
-            contenteditable="true"
+            contenteditable="${!isLocked}"
             placeholder="What's happening?"
             data-post-id="${post.id}"
+            data-locked="${isLocked}"
         >${post.content}</div>
         <div class="post-footer">
             <div class="character-count">${post.content.length}/${MAX_CHARS}</div>
             <div class="post-actions">
-                ${index > 0 ? `
-                <button class="icon-btn delete-post-btn" data-post-id="${post.id}" title="Delete post">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                    </svg>
-                </button>
-            ` : ''}
-                <button class="icon-btn emoji-btn" title="Add emoji">
+                <button class="icon-btn emoji-btn" title="Add emoji" ${isLocked ? 'disabled' : ''}>
                     <svg viewBox="0 0 24 24">
                         <path d="M12 22.75C6.072 22.75 1.25 17.928 1.25 12S6.072 1.25 12 1.25 22.75 6.072 22.75 12 17.928 22.75 12 22.75zm0-20C6.9 2.75 2.75 6.9 2.75 12S6.9 21.25 12 21.25s9.25-4.15 9.25-9.25S17.1 2.75 12 2.75z"/>
                         <path d="M12 17.115c-2.25 0-4.309-.876-5.875-2.467a.748.748 0 01-.053-.938.751.751 0 011.063-.053c1.314 1.358 3.027 2.106 4.865 2.106s3.551-.748 4.865-2.106a.751.751 0 011.063.053.748.748 0 01-.053.938c-1.566 1.591-3.625 2.467-5.875 2.467z"/>
@@ -462,16 +481,23 @@ function createPostElement(post, index) {
                     accept="image/*" 
                     class="image-input" 
                     data-post-id="${post.id}"
-                    ${post.images && post.images.length >= 4 ? 'disabled' : ''}
+                    ${isLocked || (post.images && post.images.length >= 4) ? 'disabled' : ''}
                 >
                 <button class="icon-btn image-upload-btn" 
-                    data-post-id="${post.id}" 
+                    data-post-id="${post.id}"
                     title="Add image"
-                    ${post.images && post.images.length >= 4 ? 'disabled' : ''}>
+                    ${isLocked || (post.images && post.images.length >= 4) ? 'disabled' : ''}>
                     <svg viewBox="0 0 24 24">
                         <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                     </svg>
                 </button>
+                ${index > 0 ? `
+                    <button class="icon-btn delete-post-btn ${isLocked ? 'disabled' : ''}" data-post-id="${post.id}" title="Delete post" ${isLocked ? 'disabled' : ''}>
+                        <svg viewBox="0 0 24 24">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </button>
+                ` : ''}
             </div>
         </div>
     `;
@@ -502,88 +528,90 @@ function createPostElement(post, index) {
         div.appendChild(imageGrid);
     }
 
-    // Add event listeners
-    const contentDiv = div.querySelector('.post-content');
-    const emojiBtn = div.querySelector('.emoji-btn');
-    
-    // Initial render
-    updateTextHighlighting(contentDiv);
-    
-    contentDiv.addEventListener('input', (e) => {
-        handlePostInput(e);
-        updateTextHighlighting(e.target);
-    });
-    
-    contentDiv.addEventListener('drop', (ev) => {
-        ev.preventDefault();
-        if (ev.dataTransfer.files?.[0]) {
-            const file = ev.dataTransfer.files[0];
+    // Add event listeners only if not locked
+    if (!isLocked) {
+        const contentDiv = div.querySelector('.post-content');
+        const emojiBtn = div.querySelector('.emoji-btn');
+        
+        // Initial render
+        updateTextHighlighting(contentDiv);
+        
+        contentDiv.addEventListener('input', (e) => {
+            handlePostInput(e);
+            updateTextHighlighting(e.target);
+        });
+        
+        contentDiv.addEventListener('drop', (ev) => {
+            ev.preventDefault();
+            if (ev.dataTransfer.files?.[0]) {
+                const file = ev.dataTransfer.files[0];
+                const reader = new FileReader();
+                reader.onload = e => saveImage(e, post);
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Add emoji picker handler
+        emojiBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            // Focus the content div first
+            contentDiv.focus();
+            
+            // Store the current selection state
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            
+            currentEmoji = {
+                target: contentDiv,
+                range: range.cloneRange()
+            };
+            
+            // Position picker near the emoji button
+            const rect = emojiBtn.getBoundingClientRect();
+            picker.style.top = `${rect.bottom + window.scrollY + 5}px`;
+            picker.style.left = `${rect.left + window.scrollX}px`;
+            
+            // Toggle picker visibility
+            const isVisible = picker.style.display === 'block';
+            picker.style.display = isVisible ? 'none' : 'block';
+        });
+
+        const copyBtn = div.querySelector('.copy-icon-btn');
+        copyBtn.addEventListener('click', () => copyPostContent(post.id));
+
+        const imageInput = div.querySelector('.image-input');
+        const imageUploadBtn = div.querySelector('.image-upload-btn');
+        imageUploadBtn.addEventListener('click', () => {
+            if (post.images && post.images.length >= 4) {
+                alert('Maximum of 4 images allowed per post');
+                return;
+            }
+            imageInput.click();
+        });
+        
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
             const reader = new FileReader();
             reader.onload = e => saveImage(e, post);
             reader.readAsDataURL(file);
-        }
-    });
-
-    // Add emoji picker handler
-    emojiBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        
-        // Focus the content div first
-        contentDiv.focus();
-        
-        // Store the current selection state
-        const selection = window.getSelection();
-        const range = selection.getRangeAt(0);
-        
-        currentEmoji = {
-            target: contentDiv,
-            range: range.cloneRange()
-        };
-        
-        // Position picker near the emoji button
-        const rect = emojiBtn.getBoundingClientRect();
-        picker.style.top = `${rect.bottom + window.scrollY + 5}px`;
-        picker.style.left = `${rect.left + window.scrollX}px`;
-        
-        // Toggle picker visibility
-        const isVisible = picker.style.display === 'block';
-        picker.style.display = isVisible ? 'none' : 'block';
-    });
-
-    const copyBtn = div.querySelector('.copy-icon-btn');
-    copyBtn.addEventListener('click', () => copyPostContent(post.id));
-
-    const imageInput = div.querySelector('.image-input');
-    const imageUploadBtn = div.querySelector('.image-upload-btn');
-    imageUploadBtn.addEventListener('click', () => {
-        if (post.images && post.images.length >= 4) {
-            alert('Maximum of 4 images allowed per post');
-            return;
-        }
-        imageInput.click();
-    });
-    
-    imageInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = e => saveImage(e, post);
-        reader.readAsDataURL(file);
-    });
-
-    // Add remove image button handlers
-    const removeImageBtns = div.querySelectorAll('.remove-image-btn');
-    removeImageBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const imageIndex = parseInt(btn.dataset.imageIndex);
-            removeImage(post.id, imageIndex);
         });
-    });
 
-    const deleteBtn = div.querySelector('.delete-post-btn');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => deletePost(post.id));
+        // Add remove image button handlers
+        const removeImageBtns = div.querySelectorAll('.remove-image-btn');
+        removeImageBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const imageIndex = parseInt(btn.dataset.imageIndex);
+                removeImage(post.id, imageIndex);
+            });
+        });
+
+        const deleteBtn = div.querySelector('.delete-post-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => deletePost(post.id));
+        }
     }
 
     return div;

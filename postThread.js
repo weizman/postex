@@ -35,12 +35,12 @@ function generateSteps(draftId) {
     const draft = drafts.find(d => d.id === draftId);
     if (draft && draft.posts.length > 0) {
         steps.push({
-            description: 'Open X with first post',
+            description: 'Open X with post #1',
             action: start.bind(null, draft.posts[0].content)
         });
         if (draft.posts[0].image) {
             steps.push({
-                description: 'Copy first post image',
+                description: 'Copy image for post #1',
                 action: copyImageToClipboard.bind(null, draft.posts[0].image)
             });
         }
@@ -60,22 +60,41 @@ function generateSteps(draftId) {
             });
         }     
     }
+    
+    // Add final finish step
+    steps.push({
+        description: 'All set - post it!',
+        action: () => {
+            overlay.remove();
+        }
+    });
+    
     return steps;
 }
 
+const overlay = document.createElement('div');
+
 function createStepperUI(steps) {
-    const overlay = document.createElement('div');
     overlay.className = 'post-thread-overlay';
     overlay.innerHTML = `
         <div class="post-thread-stepper">
-            <h2>Posting Thread</h2>
+            <div class="stepper-header">
+                <h2>Posting Thread</h2>
+                <button class="close-btn" title="Close">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            </div>
             <div class="steps-container">
                 ${steps.map((step, index) => `
-                    <div class="step" data-step="${index}">
-                        <div class="step-number">${index + 1}</div>
+                    <div class="step ${index === steps.length - 1 ? 'finish-step' : ''}" data-step="${index}">
+                        <div class="step-number">${index === steps.length - 1 ? '✓' : index + 1}</div>
                         <div class="step-content">
                             <div class="step-description">${step.description}</div>
-                            <button class="btn primary step-action">Execute Step</button>
+                            <button class="btn ${index === steps.length - 1 ? 'success' : 'primary'} step-action">
+                                ${index === steps.length - 1 ? 'Finish' : 'Execute Step'}
+                            </button>
                         </div>
                     </div>
                 `).join('')}
@@ -85,6 +104,18 @@ function createStepperUI(steps) {
     `;
     
     document.body.appendChild(overlay);
+
+    // Close on overlay click (outside stepper)
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.remove();
+        }
+    });
+
+    // Close on X button click
+    const closeBtn = overlay.querySelector('.close-btn');
+    closeBtn.addEventListener('click', () => overlay.remove());
+
     return overlay;
 }
 
@@ -114,10 +145,8 @@ function postThread(draftId) {
         currentStepIndex++;
         
         if (currentStepIndex >= steps.length) {
-            // All steps completed
-            setTimeout(() => {
-                overlay.remove();
-            }, 1000);
+            // Close immediately on finish
+            overlay.remove();
         } else {
             updateStepStates();
             if (xWindow) xWindow.focus();
@@ -154,16 +183,45 @@ styles.textContent = `
     }
 
     .post-thread-stepper {
-        background: white;
+        background: var(--secondary-background);
         padding: 2rem;
         border-radius: 12px;
         max-width: 500px;
         width: 90%;
+        color: var(--text-color);
     }
 
-    .post-thread-stepper h2 {
-        margin: 0 0 1.5rem;
-        text-align: center;
+    .stepper-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .stepper-header h2 {
+        margin: 0;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s ease;
+    }
+
+    .close-btn:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .close-btn svg {
+        width: 20px;
+        height: 20px;
+        fill: var(--text-color);
     }
 
     .steps-container {
@@ -178,30 +236,40 @@ styles.textContent = `
         gap: 1rem;
         padding: 1rem;
         border-radius: 8px;
-        background: #f5f5f5;
+        background: var(--background-color);
         opacity: 0.7;
     }
 
     .step.active {
-        background: #e8f5fe;
+        background: rgba(29, 161, 242, 0.1);
         opacity: 1;
     }
 
     .step.completed {
-        background: #e8f8e8;
+        background: rgba(23, 191, 99, 0.1);
         opacity: 0.8;
+    }
+
+    .step.finish-step.active {
+        background: rgba(23, 191, 99, 0.2);
+        border: 1px solid var(--success-color);
     }
 
     .step-number {
         width: 28px;
         height: 28px;
         border-radius: 50%;
-        background: #1da1f2;
+        background: var(--primary-color);
         color: white;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: bold;
+    }
+
+    .finish-step .step-number {
+        background: var(--success-color);
+        font-size: 1.2rem;
     }
 
     .step-content {
@@ -213,7 +281,11 @@ styles.textContent = `
 
     .step-description {
         font-size: 0.9rem;
-        color: #333;
+    }
+
+    .btn.success {
+        background-color: var(--success-color);
+        color: white;
     }
 
     .cancel-btn {

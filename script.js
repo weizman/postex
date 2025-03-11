@@ -6,7 +6,6 @@ const IMAGE_STORAGE_PREFIX = 'x_thread_image_';
 // DOM Elements
 const threadPosts = document.querySelector('.thread-posts');
 const addPostBtn = document.getElementById('addPost');
-const clearThreadBtn = document.getElementById('clearThread');
 const newDraftBtn = document.getElementById('newDraft');
 const draftsList = document.querySelector('.drafts-list');
 
@@ -42,7 +41,6 @@ function saveDrafts() {
 // Setup event listeners
 function setupEventListeners() {
     addPostBtn.addEventListener('click', addNewPost);
-    clearThreadBtn.addEventListener('click', clearThread);
     newDraftBtn.addEventListener('click', () => createNewDraft());
 }
 
@@ -51,7 +49,11 @@ function createNewDraft() {
     const draft = {
         id: Date.now(),
         title: 'Untitled Draft',
-        posts: [],
+        posts: [{  // Add an initial empty post
+            id: Date.now(),
+            content: '',
+            image: null
+        }],
         lastModified: new Date().toISOString()
     };
     drafts.push(draft);
@@ -97,7 +99,18 @@ function renderDraftsList() {
                 <div class="draft-item-title">${draft.title}</div>
                 <div class="draft-item-date">${new Date(draft.lastModified).toLocaleString()}</div>
             </div>
-            <button class="post-thread-btn">Post Thread</button>
+            <div class="draft-actions">
+                <button class="icon-btn post-thread-btn" title="Post Thread">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M23.77 15.67c-.292-.293-.767-.293-1.06 0l-2.22 2.22V7.65c0-2.068-1.683-3.75-3.75-3.75h-5.85c-.414 0-.75.336-.75.75s.336.75.75.75h5.85c1.24 0 2.25 1.01 2.25 2.25v10.24l-2.22-2.22c-.293-.293-.768-.293-1.06 0s-.294.768 0 1.06l3.5 3.5c.145.147.337.22.53.22s.383-.072.53-.22l3.5-3.5c.294-.292.294-.767 0-1.06zm-10.66 3.28H7.26c-1.24 0-2.25-1.01-2.25-2.25V6.46l2.22 2.22c.148.147.34.22.532.22s.384-.073.53-.22c.293-.293.293-.768 0-1.06l-3.5-3.5c-.293-.294-.768-.294-1.06 0l-3.5 3.5c-.294.292-.294.767 0 1.06s.767.293 1.06 0l2.22-2.22V16.7c0 2.068 1.683 3.75 3.75 3.75h5.85c.414 0 .75-.336.75-.75s-.337-.75-.75-.75z"/>
+                    </svg>
+                </button>
+                <button class="icon-btn delete-thread-btn" title="Delete Thread">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                </button>
+            </div>
         `;
         
         // Add click handler for the draft content
@@ -109,6 +122,13 @@ function renderDraftsList() {
         postThreadBtn.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevent triggering the draft item click
             postThread(draft.id);
+        });
+
+        // Add click handler for the delete thread button
+        const deleteThreadBtn = draftElement.querySelector('.delete-thread-btn');
+        deleteThreadBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent triggering the draft item click
+            deleteDraft(draft.id);
         });
         
         draftsList.appendChild(draftElement);
@@ -147,23 +167,6 @@ function addNewPost() {
     posts.push(post);
     updateDraftTitle();
     renderPosts();
-}
-
-// Clear the current draft
-function clearThread() {
-    if (confirm('Are you sure you want to clear this draft?')) {
-        const draftIndex = drafts.findIndex(d => d.id === currentDraftId);
-        if (draftIndex !== -1) {
-            drafts.splice(draftIndex, 1);
-            saveDrafts();
-            renderDraftsList();
-            if (drafts.length === 0) {
-                createNewDraft();
-            } else {
-                switchToDraft(drafts[0].id);
-            }
-        }
-    }
 }
 
 // Render all posts

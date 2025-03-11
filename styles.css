@@ -6,7 +6,7 @@
     --border-color: #38444D;
     --error-color: #E0245E;
     --success-color: #17BF63;
-    --sidebar-width: 350px;
+    --sidebar-width: 400px;
 }
 
 * {
@@ -99,25 +99,52 @@ body {
 }
 
 .post-thread-btn {
-    display: none;
-    padding: 0.5rem 1rem;
-    background-color: var(--primary-color);
-    color: white;
+    min-width: 32px;
+    min-height: 32px;
+    background: none;
     border: none;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
 }
 
 .draft-item:hover .post-thread-btn {
-    display: block;
+    display: flex;
+    opacity: 0.7;
 }
 
-.post-thread-btn:hover {
-    background-color: var(--primary-color);
-    opacity: 0.9;
+.post-thread-btn:hover,
+.delete-thread-btn:hover {
+    opacity: 1;
+    background-color: rgba(29, 161, 242, 0.1);
+}
+
+.post-thread-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--primary-color);
+}
+
+.delete-thread-btn {
+    min-width: 32px;
+    min-height: 32px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.delete-thread-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--error-color);
 }
 
 .draft-content {
@@ -167,6 +194,11 @@ body {
 .btn.primary {
     background-color: var(--primary-color);
     color: white;
+    font-size: 1.2rem;
+    line-height: 1;
+    min-width: 42px;
+    min-height: 42px;
+    padding: 0.5rem 1rem;
 }
 
 .btn.secondary {
@@ -371,4 +403,14 @@ h1 {
 .image-preview img {
     max-width: 100%;
     border-radius: 8px;
+}
+
+.draft-actions {
+    display: none;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.draft-item:hover .draft-actions {
+    display: flex;
 } 

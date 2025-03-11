@@ -308,7 +308,7 @@ footer {
 .post-content .url {
     color: var(--primary-color);
     text-decoration: none;
-    cursor: text;
+    cursor: pointer;
 }
 
 .post-content:empty:before {

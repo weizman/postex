@@ -273,6 +273,10 @@ function createPostElement(post, index) {
     return div;
 }
 
+function openUrl(url) {
+    window.open(url, '_blank');
+}
+
 // Update text highlighting
 function updateTextHighlighting(element) {
     const content = element.textContent;
@@ -314,7 +318,7 @@ function updateTextHighlighting(element) {
         .replace(/>/g, '&gt;');
     
     // Then highlight URLs
-    formattedContent = formattedContent.replace(urlRegex, '<span class="url">$1</span>');
+    formattedContent = formattedContent.replace(urlRegex, '<span onclick="openUrl(\'$1\')" class="url">$1</span>');
     
     // Finally, apply character limit highlighting if needed
     if (count > MAX_CHARS) {

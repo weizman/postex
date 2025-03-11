@@ -201,7 +201,7 @@ async function createNewDraft() {
         posts: [{  // Add an initial empty post
             id: Date.now(),
             content: '',
-            image: null
+            images: []  // Changed from image: null to images array
         }],
         lastModified: new Date().toISOString()
     };
@@ -219,14 +219,21 @@ async function switchToDraft(draftId) {
         posts = draft.posts;
         // Load images for all posts
         for (const post of posts) {
-            if (post.image) {
+            // Initialize images array if it doesn't exist (for backward compatibility)
+            if (!Array.isArray(post.images)) {
+                post.images = post.image ? [post.image] : [];
+                delete post.image;
+            }
+            
+            // Load all images for the post
+            for (let i = 0; i < post.images.length; i++) {
                 try {
-                    const imageData = await dbGet(IMAGES_STORE, post.id);
+                    const imageData = await dbGet(IMAGES_STORE, `${post.id}_${i}`);
                     if (imageData) {
-                        post.image = imageData.data;
+                        post.images[i] = imageData.data;
                     }
                 } catch (error) {
-                    console.error('Failed to load image for post:', post.id, error);
+                    console.error('Failed to load image for post:', post.id, i, error);
                 }
             }
         }
@@ -306,13 +313,13 @@ async function deleteDraft(draftId) {
             
             // Delete all images associated with the draft's posts
             const deleteImagePromises = draft.posts
-                .filter(post => post.image)
-                .map(post => dbDelete(IMAGES_STORE, post.id));
+                .filter(post => post.images && post.images.length > 0)
+                .map(post => post.images.map((_, index) => dbDelete(IMAGES_STORE, `${post.id}_${index}`)));
             
             try {
                 // Delete images and draft
                 await Promise.all([
-                    ...deleteImagePromises,
+                    ...deleteImagePromises.flat(),
                     dbDelete(DRAFTS_STORE, draftId)
                 ]);
                 
@@ -340,7 +347,7 @@ async function addNewPost() {
     const post = {
         id: Date.now(),
         content: '',
-        image: null
+        images: []  // Initialize with empty images array
     };
     posts.push(post);
     await updateDraftTitle();
@@ -419,7 +426,9 @@ function copyPostContent(postId) {
 function createPostElement(post, index) {
     const div = document.createElement('div');
     div.className = 'post';
-    div.innerHTML = `
+    
+    // Create the main post content
+    const contentHtml = `
         <div 
             class="post-content" 
             contenteditable="true"
@@ -446,8 +455,12 @@ function createPostElement(post, index) {
                     accept="image/*" 
                     class="image-input" 
                     data-post-id="${post.id}"
+                    ${post.images && post.images.length >= 4 ? 'disabled' : ''}
                 >
-                <button class="icon-btn image-upload-btn" data-post-id="${post.id}" title="Add image">
+                <button class="icon-btn image-upload-btn" 
+                    data-post-id="${post.id}" 
+                    title="Add image"
+                    ${post.images && post.images.length >= 4 ? 'disabled' : ''}>
                     <svg viewBox="0 0 24 24">
                         <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                     </svg>
@@ -461,17 +474,33 @@ function createPostElement(post, index) {
                 ` : ''}
             </div>
         </div>
-        ${post.image ? `
-            <div class="image-preview">
-                <img src="${post.image}" alt="Preview">
-                <button class="icon-btn remove-image-btn" data-post-id="${post.id}" title="Remove image">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                    </svg>
-                </button>
-            </div>
-        ` : ''}
     `;
+    
+    div.innerHTML = contentHtml;
+    
+    // Add images grid if there are images
+    if (post.images && post.images.length > 0) {
+        const imageGrid = document.createElement('div');
+        imageGrid.className = 'image-grid';
+        
+        post.images.forEach((image, imageIndex) => {
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'image-container';
+            imageContainer.innerHTML = `
+                <div class="image-preview">
+                    <img src="${image}" alt="Preview" data-post-id="${post.id}" data-image-index="${imageIndex}">
+                    <button class="icon-btn remove-image-btn" data-post-id="${post.id}" data-image-index="${imageIndex}" title="Remove image">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            imageGrid.appendChild(imageContainer);
+        });
+        
+        div.appendChild(imageGrid);
+    }
 
     // Add event listeners
     const contentDiv = div.querySelector('.post-content');
@@ -483,6 +512,16 @@ function createPostElement(post, index) {
     contentDiv.addEventListener('input', (e) => {
         handlePostInput(e);
         updateTextHighlighting(e.target);
+    });
+    
+    contentDiv.addEventListener('drop', (ev) => {
+        ev.preventDefault();
+        if (ev.dataTransfer.files?.[0]) {
+            const file = ev.dataTransfer.files[0];
+            const reader = new FileReader();
+            reader.onload = e => saveImage(e, post);
+            reader.readAsDataURL(file);
+        }
     });
 
     // Add emoji picker handler
@@ -516,26 +555,31 @@ function createPostElement(post, index) {
 
     const imageInput = div.querySelector('.image-input');
     const imageUploadBtn = div.querySelector('.image-upload-btn');
-    imageUploadBtn.addEventListener('click', () => imageInput.click());
-    imageInput.addEventListener('change', handleImageUpload);
-
-    function dropHandler(ev) {
-        ev.preventDefault();
-        if (ev.dataTransfer.files?.[0]) {
-          const file = ev.dataTransfer.files[0];
-          const reader = new FileReader();
-          reader.onload = e => saveImage(e, post);
-          reader.readAsDataURL(file);
+    imageUploadBtn.addEventListener('click', () => {
+        if (post.images && post.images.length >= 4) {
+            alert('Maximum of 4 images allowed per post');
+            return;
         }
-    }
+        imageInput.click();
+    });
+    
+    imageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = e => saveImage(e, post);
+        reader.readAsDataURL(file);
+    });
 
-    contentDiv.addEventListener('drop', dropHandler);
-
-    // Add remove image button handler if image exists
-    if (post.image) {
-        const removeImageBtn = div.querySelector('.remove-image-btn');
-        removeImageBtn.addEventListener('click', () => removeImage(post.id));
-    }
+    // Add remove image button handlers
+    const removeImageBtns = div.querySelectorAll('.remove-image-btn');
+    removeImageBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const imageIndex = parseInt(btn.dataset.imageIndex);
+            removeImage(post.id, imageIndex);
+        });
+    });
 
     const deleteBtn = div.querySelector('.delete-post-btn');
     if (deleteBtn) {
@@ -708,13 +752,32 @@ async function handlePostInput(e) {
     }
 }
 
-async function saveImage(event, post) {
+async function saveImage(event, post, index) {
     try {
-        post.image = event.target.result;
+        // Add the image to the post's images array
+        if (!Array.isArray(post.images)) {
+            post.images = [];
+        }
+        
+        // Check if we've reached the limit
+        if (post.images.length >= 4) {
+            alert('Maximum of 4 images allowed per post');
+            return;
+        }
+        
+        // If no index provided, add to the end
+        if (typeof index !== 'number') {
+            index = post.images.length;
+        }
+        
+        post.images[index] = event.target.result;
+        
+        // Save to IndexedDB with a compound key
         await dbPut(IMAGES_STORE, {
-            id: post.id,
+            id: `${post.id}_${index}`,
             data: event.target.result
         });
+        
         await updateDraftTitle();
         await saveDraft();
         renderPosts();
@@ -732,7 +795,7 @@ function handleImageUpload(e) {
     const postId = parseInt(e.target.dataset.postId);
     const post = posts.find(p => p.id === postId);
     const reader = new FileReader();
-    reader.onload = e => saveImage(e, post);
+    reader.onload = e => saveImage(e, post, index);
     reader.readAsDataURL(file);
 }
 
@@ -742,11 +805,15 @@ async function deletePost(postId) {
         const postIndex = posts.findIndex(p => p.id === postId);
         const post = posts[postIndex];
         
-        if (post && post.image) {
+        if (post && post.images && post.images.length > 0) {
             try {
-                await dbDelete(IMAGES_STORE, postId);
+                // Delete all images associated with the post
+                const deletePromises = post.images.map((_, index) => 
+                    dbDelete(IMAGES_STORE, `${postId}_${index}`)
+                );
+                await Promise.all(deletePromises);
             } catch (error) {
-                console.error('Failed to delete image:', error);
+                console.error('Failed to delete images:', error);
             }
         }
         
@@ -781,12 +848,16 @@ async function saveDraft() {
 }
 
 // Remove image from post
-async function removeImage(postId) {
+async function removeImage(postId, imageIndex) {
     const post = posts.find(p => p.id === postId);
-    if (post) {
-        post.image = null;
+    if (post && post.images && post.images[imageIndex]) {
         try {
-            await dbDelete(IMAGES_STORE, postId);
+            // Remove the image from IndexedDB
+            await dbDelete(IMAGES_STORE, `${postId}_${imageIndex}`);
+            
+            // Remove the image from the array
+            post.images.splice(imageIndex, 1);
+            
             await updateDraftTitle();
             await saveDraft();
             renderPosts();

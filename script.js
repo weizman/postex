@@ -462,7 +462,7 @@ function createPostElement(post, index, isLocked) {
             data-locked="${isLocked}"
         >${post.content}</div>
         <div class="post-footer">
-            <div class="character-count">${post.content.length}/${MAX_CHARS}</div>
+            <div class="character-count">${calculateAdjustedLength(post.content)}/${MAX_CHARS}</div>
             <div class="post-actions">
                 <button class="icon-btn emoji-btn" title="Add emoji" ${isLocked ? 'disabled' : ''}>
                     <svg viewBox="0 0 24 24">

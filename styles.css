@@ -807,7 +807,7 @@ h1 {
 }
 
 .post[data-locked="true"] .delete-post-btn {
-    opacity: 0.3;
+    opacity: 0;
     cursor: not-allowed;
     pointer-events: none;
 } 

@@ -37,6 +37,15 @@ function start(content) {
     );
 }
 
+function calculateAdjustedLength(text) {
+    // URL regex pattern
+    const urlPattern = /https?:\/\/[^\s]+/g;
+    
+    // Replace each URL with a 23-char placeholder and get the final length
+    const adjustedText = text.replace(urlPattern, '_'.repeat(23));
+    return adjustedText.length;
+}
+
 // Post thread to X
 function generateSteps(draftId) {
     const steps = [];
@@ -137,10 +146,10 @@ function postThread(draftId) {
     const draft = drafts.find(d => d.id === draftId);
     if (!draft) return;
 
-    // Check for posts exceeding character limit
+    // Check for posts exceeding character limit with URL adjustment
     const invalidPosts = draft.posts.map((post, index) => ({
         index: index + 1,
-        length: post.content.length
+        length: calculateAdjustedLength(post.content)
     })).filter(post => post.length > MAX_CHARS);
 
     if (invalidPosts.length > 0) {

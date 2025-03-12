@@ -28,9 +28,12 @@ function copyImageToClipboard(base64) {
 }
 
 function start(content) {
+    const div = document.querySelector('.post-thread-stepper');
+    const style = getComputedStyle(div);
+    const {width, height, top, left} = style;
     return window.open(
         `https://x.com/intent/post?text=${encodeURIComponent(content)}`,
-        "popupWindow", "top=200,left=1000,width=600,height=700"
+        "popupWindow", `top=${parseInt(top)-300+'px'},left=${parseInt(left)+parseInt(width)+100+'px'},width=${width},height=${height}`
     );
 }
 

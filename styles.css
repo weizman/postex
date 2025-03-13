@@ -342,19 +342,15 @@ footer {
 }
 
 .post-content {
-    width: 100%;
     min-height: 100px;
-    background: transparent;
-    border: none;
-    color: var(--text-color);
-    font-size: 1rem;
-    resize: vertical;
-    margin-bottom: 1rem;
-    font-family: inherit;
-    position: relative;
-    outline: none;
+    padding: 1rem;
+    border-radius: 8px;
+    background: var(--background-color);
+    margin-bottom: 0.5rem;
     white-space: pre-wrap;
-    word-wrap: break-word;
+    word-break: break-word;
+    unicode-bidi: plaintext;
+    text-align: start;
 }
 
 .post-content .url {

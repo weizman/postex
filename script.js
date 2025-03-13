@@ -457,6 +457,7 @@ function createPostElement(post, index, isLocked) {
         <div 
             class="post-content" 
             contenteditable="${!isLocked}"
+            dir="auto"
             placeholder="What's happening?"
             data-post-id="${post.id}"
             data-locked="${isLocked}"

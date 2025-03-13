@@ -174,6 +174,11 @@ function postThread(draftId) {
             stepEl.classList.toggle('completed', index < currentStepIndex);
             const actionBtn = stepEl.querySelector('.step-action');
             actionBtn.disabled = index !== currentStepIndex;
+            
+            // Focus the current step's action button
+            if (index === currentStepIndex) {
+                actionBtn.focus();
+            }
         });
     }
 
@@ -197,9 +202,19 @@ function postThread(draftId) {
     // Set up event listeners
     overlay.addEventListener('click', (e) => {
         if (e.target.classList.contains('step-action')) {
+            // Prevent executing if the click was triggered by Enter key
+            if (e.detail === 0) return; // detail is 0 for keyboard-triggered clicks
             executeCurrentStep();
         } else if (e.target.classList.contains('cancel-btn')) {
             overlay.remove();
+        }
+    });
+
+    // Add keyboard event listener for Enter key
+    overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.classList.contains('step-action') && !e.target.disabled) {
+            e.preventDefault(); // Prevent the default button click
+            executeCurrentStep();
         }
     });
 
